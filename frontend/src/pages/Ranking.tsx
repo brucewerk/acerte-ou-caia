@@ -14,7 +14,7 @@ export default function Ranking() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center px-6 py-12 gap-8">
+    <div className="min-h-dvh flex flex-col items-center px-6 py-12 gap-8">
       <Link to="/" className="titulo-jogo text-lg text-ouro-400 self-start">
         ACERTE <span className="text-creme">ou</span> CAIA
       </Link>

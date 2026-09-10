@@ -2,6 +2,7 @@ import { Schema, model, Document, Types } from "mongoose";
 
 export interface IGameResult extends Document {
   jogador: string;
+  usuarioId?: Types.ObjectId;
   premioFinal: number;
   duelosVencidos: number;
   chegouAoDesafioFinal: boolean;
@@ -11,6 +12,7 @@ export interface IGameResult extends Document {
 
 const GameResultSchema = new Schema<IGameResult>({
   jogador: { type: String, required: true, trim: true },
+  usuarioId: { type: Schema.Types.ObjectId, ref: "User" },
   premioFinal: { type: Number, required: true, default: 0 },
   duelosVencidos: { type: Number, required: true, default: 0 },
   chegouAoDesafioFinal: { type: Boolean, default: false },

@@ -10,6 +10,7 @@ import {
 } from "../api/game";
 import { sortearParDeMoedas } from "./premios";
 import { atribuirPersonas } from "./personas";
+import { sons } from "./sons";
 
 export type FaseJogo =
   | "nome"
@@ -29,9 +30,10 @@ export interface EstadoQueda {
 const VIDAS_INICIAIS = 3;
 const MAX_VIDAS = 3;
 const TOTAL_DUELOS = 10;
-const DELAY_MAXIMO_UX_MS = 4500; // limite pratico de espera visual pela resposta da CPU
+const DELAY_MAXIMO_UX_MS = 4200; // limite pratico de espera visual pela resposta da CPU
+const DELAY_MINIMO_UX_MS = 1400;
 
-/** Sorteia o tipo da proxima rodada: a maioria e de multipla escolha, com rodadas especiais ocasionais. */
+/** Sorteia o tipo de rodada de um duelo inteiro (fixo do primeiro ao ultimo turno contra aquele adversario). */
 function sortearTipoRodada(): TipoRodada {
   const r = Math.random();
   if (r < 0.62) return "multipla-escolha";
@@ -54,6 +56,7 @@ export function useJogo() {
   const [palavraAtual, setPalavraAtual] = useState<Palavra | null>(null);
   const [afirmacaoAtual, setAfirmacaoAtual] = useState<Afirmacao | null>(null);
   const [rodadaChave, setRodadaChave] = useState(0);
+  const [sucessoEspectadorPalavra, setSucessoEspectadorPalavra] = useState(false);
 
   const [opcaoSelecionada, setOpcaoSelecionada] = useState<number | null>(null);
   const [escolhaSimOuNao, setEscolhaSimOuNao] = useState<boolean | null>(null);
@@ -76,53 +79,78 @@ export function useJogo() {
   } | null>(null);
 
   const usouRepasseNaRodada = useRef(false);
+  const perguntasUsadasRef = useRef<Set<string>>(new Set());
+  const palavrasUsadasRef = useRef<Set<string>>(new Set());
+  const afirmacoesUsadasRef = useRef<Set<string>>(new Set());
 
   const adversarioAtual = adversarios.find((a) => a.estacao === adversarioAtualEstacao) ?? null;
 
-  /** Busca o conteudo da proxima rodada do Lider, sorteando o tipo de rodada. */
-  const iniciarTurnoLider = useCallback(async () => {
-    setCarregando(true);
-    setErro(null);
-    setTurno("lider");
-    usouRepasseNaRodada.current = false;
-
-    const tipo = sortearTipoRodada();
-    setTipoRodada(tipo);
-    setOpcaoSelecionada(null);
-    setEscolhaSimOuNao(null);
-    setMostrarCorreta(false);
-    setBloqueado(false);
-
-    try {
-      if (tipo === "multipla-escolha") {
-        const [pergunta] = await buscarPerguntas(1);
-        setPerguntaAtual(pergunta ?? null);
-        setPalavraAtual(null);
-        setAfirmacaoAtual(null);
-      } else if (tipo === "letras-embaralhadas") {
-        const [palavra] = await buscarPalavras(1);
-        setPalavraAtual(palavra ?? null);
-        setPerguntaAtual(null);
-        setAfirmacaoAtual(null);
-      } else {
-        const [afirmacao] = await buscarAfirmacoes(1);
-        setAfirmacaoAtual(afirmacao ?? null);
+  /** Busca uma nova pergunta/palavra/afirmacao do tipo indicado, evitando repetir o que ja saiu nesta partida. */
+  const carregarConteudo = useCallback(
+    async (tipo: TipoRodada): Promise<Pergunta | Palavra | Afirmacao | null> => {
+      try {
+        if (tipo === "multipla-escolha") {
+          const excluir = Array.from(perguntasUsadasRef.current).join(",");
+          const [item] = await buscarPerguntas(1, undefined, excluir);
+          if (item) perguntasUsadasRef.current.add(item._id);
+          setPerguntaAtual(item ?? null);
+          setPalavraAtual(null);
+          setAfirmacaoAtual(null);
+          return item ?? null;
+        }
+        if (tipo === "letras-embaralhadas") {
+          const excluir = Array.from(palavrasUsadasRef.current).join(",");
+          const [item] = await buscarPalavras(1, excluir);
+          if (item) palavrasUsadasRef.current.add(item._id);
+          setPalavraAtual(item ?? null);
+          setPerguntaAtual(null);
+          setAfirmacaoAtual(null);
+          return item ?? null;
+        }
+        const excluir = Array.from(afirmacoesUsadasRef.current).join(",");
+        const [item] = await buscarAfirmacoes(1, excluir);
+        if (item) afirmacoesUsadasRef.current.add(item._id);
+        setAfirmacaoAtual(item ?? null);
         setPerguntaAtual(null);
         setPalavraAtual(null);
+        return item ?? null;
+      } catch {
+        setErro("Nao foi possivel carregar a proxima rodada. Verifique a API e tente novamente.");
+        return null;
       }
+    },
+    []
+  );
+
+  /** Inicia um novo turno do Lider, usando o tipo de rodada fixo do duelo atual. */
+  const iniciarTurnoLider = useCallback(
+    async (tipoOverride?: TipoRodada) => {
+      setCarregando(true);
+      setErro(null);
+      setTurno("lider");
+      usouRepasseNaRodada.current = false;
+      setOpcaoSelecionada(null);
+      setEscolhaSimOuNao(null);
+      setMostrarCorreta(false);
+      setBloqueado(false);
+      setAguardandoCPU(false);
+
+      const tipo = tipoOverride ?? tipoRodada;
+      await carregarConteudo(tipo);
       setRodadaChave((v) => v + 1);
-    } catch {
-      setErro("Nao foi possivel carregar a proxima rodada. Verifique a API e tente novamente.");
-    } finally {
       setCarregando(false);
-    }
-  }, []);
+    },
+    [tipoRodada, carregarConteudo]
+  );
 
   const iniciarJogo = useCallback(async (nome: string) => {
     setNomeJogador(nome);
     setFase("sorteando");
     setCarregando(true);
     setErro(null);
+    perguntasUsadasRef.current.clear();
+    palavrasUsadasRef.current.clear();
+    afirmacoesUsadasRef.current.clear();
     try {
       const novos = await apiGerarAdversarios();
       setAdversarios(atribuirPersonas(novos));
@@ -139,12 +167,15 @@ export function useJogo() {
     }
   }, []);
 
-  /** O jogador escolhe, entre as estacoes restantes, qual adversario vai enfrentar. */
+  /** O jogador escolhe, entre as estacoes restantes, qual adversario vai enfrentar.
+   * O tipo de rodada e sorteado aqui e permanece o mesmo ate o fim deste duelo. */
   const selecionarAdversario = useCallback(
     async (estacao: number) => {
+      const tipoDoDuelo = sortearTipoRodada();
+      setTipoRodada(tipoDoDuelo);
       setAdversarioAtualEstacao(estacao);
       setFase("duelo");
-      await iniciarTurnoLider();
+      await iniciarTurnoLider(tipoDoDuelo);
     },
     [iniciarTurnoLider]
   );
@@ -156,6 +187,7 @@ export function useJogo() {
     ) => {
       setResultadoFinal({ ...opts, premioFinal });
       setFase("fim");
+      if (opts.sucesso && premioFinal > 0) sons.vitoria();
       try {
         await registrarResultado({
           jogador: nomeJogador || "Jogador",
@@ -172,6 +204,7 @@ export function useJogo() {
   );
 
   const jogadorCaiu = useCallback(() => {
+    sons.queda();
     setQueda({ visivel: true, quemCaiu: "jogador" });
     setTimeout(() => {
       setQueda({ visivel: false, quemCaiu: "jogador" });
@@ -180,6 +213,7 @@ export function useJogo() {
   }, [salvarResultado]);
 
   const adversarioCaiu = useCallback(() => {
+    sons.queda();
     setQueda({ visivel: true, quemCaiu: "adversario" });
     setTimeout(() => {
       setQueda({ visivel: false, quemCaiu: "adversario" });
@@ -194,35 +228,69 @@ export function useJogo() {
     }, 1300);
   }, [adversarioAtualEstacao]);
 
-  /** Chamado quando e a vez da CPU: ela responde de acordo com o seu nivel de inteligencia. */
+  /** Turno da CPU: ela "pensa", uma rodada nova (mesmo tipo do duelo) e exibida, e a resposta
+   * dela e revelada visualmente antes de decidir se ela cai ou devolve a vez ao Lider. */
   const turnoAdversario = useCallback(async () => {
     if (!adversarioAtual) return;
+    sons.turno();
     setTurno("adversario");
     setBloqueado(true);
     setAguardandoCPU(true);
+    setOpcaoSelecionada(null);
+    setEscolhaSimOuNao(null);
+    setMostrarCorreta(false);
+    setSucessoEspectadorPalavra(false);
 
     try {
-      const resultado = await respostaCPU(adversarioAtual.nivel);
-      const espera = Math.min(resultado.tempoRespostaMs, DELAY_MAXIMO_UX_MS);
-      setTimeout(async () => {
+      const [conteudo, resultado] = await Promise.all([
+        carregarConteudo(tipoRodada),
+        respostaCPU(adversarioAtual.nivel),
+      ]);
+      setRodadaChave((v) => v + 1);
+
+      const delayTotal = Math.min(Math.max(resultado.tempoRespostaMs, DELAY_MINIMO_UX_MS), DELAY_MAXIMO_UX_MS);
+      const pensandoMs = Math.min(700, delayTotal * 0.35);
+      const revelarMs = Math.max(900, delayTotal - pensandoMs);
+
+      setTimeout(() => {
         setAguardandoCPU(false);
-        if (resultado.acertou) {
-          // O adversario sobreviveu esta rodada: a vez volta para o Lider.
-          await iniciarTurnoLider();
-        } else {
-          adversarioCaiu();
+
+        if (tipoRodada === "multipla-escolha" && conteudo) {
+          const pergunta = conteudo as Pergunta;
+          const indiceEscolhido = resultado.acertou
+            ? pergunta.respostaCorreta
+            : (pergunta.respostaCorreta + 1 + Math.floor(Math.random() * 3)) % 4;
+          setOpcaoSelecionada(indiceEscolhido);
+          setMostrarCorreta(true);
+        } else if (tipoRodada === "sim-ou-nao" && conteudo) {
+          const afirmacao = conteudo as Afirmacao;
+          setEscolhaSimOuNao(resultado.acertou ? afirmacao.verdadeira : !afirmacao.verdadeira);
+          setMostrarCorreta(true);
+        } else if (tipoRodada === "letras-embaralhadas") {
+          setSucessoEspectadorPalavra(resultado.acertou);
         }
-      }, espera);
+
+        resultado.acertou ? sons.acerto() : sons.erro();
+
+        setTimeout(() => {
+          if (resultado.acertou) {
+            iniciarTurnoLider();
+          } else {
+            adversarioCaiu();
+          }
+        }, revelarMs);
+      }, pensandoMs);
     } catch {
       setAguardandoCPU(false);
       setErro("Falha ao consultar a decisao do adversario.");
       setBloqueado(false);
     }
-  }, [adversarioAtual, adversarioCaiu, iniciarTurnoLider]);
+  }, [adversarioAtual, adversarioCaiu, iniciarTurnoLider, carregarConteudo, tipoRodada]);
 
   /** O Lider venceu a propria rodada: a vez passa para o adversario. */
   const venceuRodadaLider = useCallback(() => {
-    setTimeout(() => turnoAdversario(), 500);
+    sons.acerto();
+    setTimeout(() => turnoAdversario(), 550);
   }, [turnoAdversario]);
 
   const responderMultiplaEscolha = useCallback(
@@ -249,6 +317,7 @@ export function useJogo() {
       if (sucesso) {
         venceuRodadaLider();
       } else {
+        sons.erro();
         jogadorCaiu();
       }
     },
@@ -284,12 +353,14 @@ export function useJogo() {
   const repassar = useCallback(() => {
     if (bloqueado || vidas <= 0 || !adversarioAtual || usouRepasseNaRodada.current) return;
     usouRepasseNaRodada.current = true;
+    sons.clique();
     setVidas((v) => v - 1);
     turnoAdversario();
   }, [bloqueado, vidas, adversarioAtual, turnoAdversario]);
 
   const escolherMoeda = useCallback(
     (moeda: "ouro" | "prata") => {
+      sons.moeda();
       const premioEscolhido = moeda === "ouro" ? moedaOuro : moedaPrata;
       if (!premioEscolhido) return;
       if (premioEscolhido.tipo === "valor") setPremio((p) => p + premioEscolhido.valor);
@@ -349,6 +420,9 @@ export function useJogo() {
     setMoedaPrata(null);
   }, []);
 
+  /** Ids de perguntas de multipla escolha ja usadas nesta partida, para o Desafio Final tambem evitar repetir. */
+  const obterPerguntasUsadas = useCallback(() => Array.from(perguntasUsadasRef.current), []);
+
   return {
     fase,
     nomeJogador,
@@ -367,6 +441,7 @@ export function useJogo() {
     opcaoSelecionada,
     escolhaSimOuNao,
     mostrarCorreta,
+    sucessoEspectadorPalavra,
     bloqueado: bloqueado || aguardandoCPU,
     aguardandoCPU,
     carregando,
@@ -389,5 +464,6 @@ export function useJogo() {
     arriscarDesafioFinal,
     finalizarDesafioFinal,
     jogarNovamente,
+    obterPerguntasUsadas,
   };
 }

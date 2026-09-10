@@ -8,6 +8,7 @@ import {
   cpuDecideArriscarFinal,
 } from "../cpu/cpuEngine";
 import { NivelCPU } from "../types";
+import { RequisicaoAutenticada } from "../middleware/authUsuario";
 
 // GET /api/game/adversarios -> gera os 10 adversarios (estacoes 1 a 10) de uma nova partida
 export function gerarNovaPartida(req: Request, res: Response) {
@@ -43,7 +44,8 @@ export function decisaoFinalCPU(req: Request, res: Response) {
 }
 
 // POST /api/game/resultado -> registra o resultado de uma partida concluida
-export async function registrarResultado(req: Request, res: Response, next: NextFunction) {
+// (autenticacao opcional: visitantes tambem podem salvar resultado no ranking)
+export async function registrarResultado(req: RequisicaoAutenticada, res: Response, next: NextFunction) {
   try {
     const { jogador, premioFinal, duelosVencidos, chegouAoDesafioFinal, dobrouPremio } = req.body;
 
@@ -53,6 +55,7 @@ export async function registrarResultado(req: Request, res: Response, next: Next
 
     const resultado = await GameResult.create({
       jogador,
+      usuarioId: req.usuarioId || undefined,
       premioFinal,
       duelosVencidos: duelosVencidos ?? 0,
       chegouAoDesafioFinal: !!chegouAoDesafioFinal,

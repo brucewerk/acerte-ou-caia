@@ -1,20 +1,24 @@
 import { api } from "./client";
 import { Pergunta, NivelCPU, ResultadoRanking, Palavra, Afirmacao } from "../types";
 
-export async function buscarPerguntas(quantidade: number, dificuldade?: string): Promise<Pergunta[]> {
+export async function buscarPerguntas(quantidade: number, dificuldade?: string, excluir?: string): Promise<Pergunta[]> {
   const { data } = await api.get<Pergunta[]>("/questions/random", {
-    params: { quantidade, dificuldade },
+    params: { quantidade, dificuldade, excluir: excluir || undefined },
   });
   return data;
 }
 
-export async function buscarPalavras(quantidade: number): Promise<Palavra[]> {
-  const { data } = await api.get<Palavra[]>("/palavras/random", { params: { quantidade } });
+export async function buscarPalavras(quantidade: number, excluir?: string): Promise<Palavra[]> {
+  const { data } = await api.get<Palavra[]>("/palavras/random", {
+    params: { quantidade, excluir: excluir || undefined },
+  });
   return data;
 }
 
-export async function buscarAfirmacoes(quantidade: number): Promise<Afirmacao[]> {
-  const { data } = await api.get<Afirmacao[]>("/afirmacoes/random", { params: { quantidade } });
+export async function buscarAfirmacoes(quantidade: number, excluir?: string): Promise<Afirmacao[]> {
+  const { data } = await api.get<Afirmacao[]>("/afirmacoes/random", {
+    params: { quantidade, excluir: excluir || undefined },
+  });
   return data;
 }
 

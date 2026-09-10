@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Question } from "../models/Question";
+import { parseIdsExcluidos } from "../utils/excluirIds";
 
 // GET /api/questions  (uso do admin - lista tudo, com filtros opcionais)
 export async function listarPerguntas(req: Request, res: Response, next: NextFunction) {
@@ -17,15 +18,18 @@ export async function listarPerguntas(req: Request, res: Response, next: NextFun
   }
 }
 
-// GET /api/questions/random?quantidade=1&dificuldade=medio
+// GET /api/questions/random?quantidade=1&dificuldade=medio&excluir=id1,id2
 // Usado durante a partida - nunca revela qual e a resposta correta antes da hora.
+// "excluir" evita repetir perguntas ja sorteadas na mesma partida.
 export async function sortearPerguntas(req: Request, res: Response, next: NextFunction) {
   try {
     const quantidade = Math.min(Number(req.query.quantidade) || 1, 50);
     const dificuldade = req.query.dificuldade as string | undefined;
+    const idsExcluidos = parseIdsExcluidos(req.query.excluir);
 
     const match: Record<string, unknown> = { ativa: true };
     if (dificuldade) match.dificuldade = dificuldade;
+    if (idsExcluidos.length) match._id = { $nin: idsExcluidos };
 
     const perguntas = await Question.aggregate([
       { $match: match },

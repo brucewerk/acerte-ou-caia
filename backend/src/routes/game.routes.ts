@@ -7,6 +7,7 @@ import {
   decisaoFinalCPU,
   registrarResultado,
 } from "../controllers/gameController";
+import { authOpcional } from "../middleware/authUsuario";
 
 const router = Router();
 
@@ -15,6 +16,6 @@ router.post("/cpu/responder", respostaCPU);
 router.post("/cpu/repassar", repassarCPU);
 router.get("/cpu/moeda", moedaCPU);
 router.post("/cpu/decisao-final", decisaoFinalCPU);
-router.post("/resultado", registrarResultado);
+router.post("/resultado", authOpcional, registrarResultado);
 
 export default router;

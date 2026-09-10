@@ -11,6 +11,8 @@ interface DuelPanelProps {
   bloqueado: boolean;
   opcaoSelecionada: number | null;
   mostrarCorreta: boolean;
+  /** Oculta o relogio de 30s — usado quando este painel exibe a rodada da CPU. */
+  mostrarTimer?: boolean;
 }
 
 /** Painel do duelo atual: pergunta, 4 opcoes, relogio de 30s e botao de repasse. */
@@ -24,17 +26,20 @@ export function DuelPanel({
   bloqueado,
   opcaoSelecionada,
   mostrarCorreta,
+  mostrarTimer = true,
 }: DuelPanelProps) {
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-6">
-      <Timer duracaoMs={30000} ativo={!bloqueado} onEsgotar={onEsgotarTempo} chave={perguntaChave} />
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-4 sm:gap-6">
+      {mostrarTimer && (
+        <Timer duracaoMs={30000} ativo={!bloqueado} onEsgotar={onEsgotarTempo} chave={perguntaChave} />
+      )}
 
-      <div className="bg-palco-800 border border-palco-700 rounded-2xl p-6 sm:p-8 text-center">
+      <div className="bg-palco-800 border border-palco-700 rounded-2xl p-4 sm:p-8 text-center">
         <span className="text-xs uppercase tracking-wide text-ouro-400/80">{pergunta.categoria}</span>
-        <h2 className="titulo-jogo text-xl sm:text-2xl mt-2 leading-snug">{pergunta.pergunta}</h2>
+        <h2 className="titulo-jogo text-lg sm:text-2xl mt-2 leading-snug">{pergunta.pergunta}</h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
         {pergunta.opcoes.map((opcao, i) => {
           const ehCorreta = mostrarCorreta && i === pergunta.respostaCorreta;
           const ehErrada = mostrarCorreta && i === opcaoSelecionada && i !== pergunta.respostaCorreta;
@@ -43,7 +48,7 @@ export function DuelPanel({
               key={i}
               disabled={bloqueado}
               onClick={() => onResponder(i)}
-              className={`text-left px-5 py-4 rounded-xl border transition-colors font-medium
+              className={`text-left px-4 sm:px-5 py-3 sm:py-4 rounded-xl border transition-colors font-medium text-sm sm:text-base
                 ${ehCorreta ? "bg-acerto-500/20 border-acerto-500 text-acerto-400" : ""}
                 ${ehErrada ? "bg-queda-500/20 border-queda-500 text-queda-500" : ""}
                 ${!ehCorreta && !ehErrada ? "bg-palco-800 border-palco-700 hover:border-ouro-500 hover:bg-palco-700" : ""}

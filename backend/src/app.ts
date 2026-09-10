@@ -1,5 +1,6 @@
 import express, { Application } from "express";
 import cors from "cors";
+import authRoutes from "./routes/auth.routes";
 import questionsRoutes from "./routes/questions.routes";
 import palavrasRoutes from "./routes/palavras.routes";
 import afirmacoesRoutes from "./routes/afirmacoes.routes";
@@ -18,6 +19,7 @@ export function createApp(): Application {
     res.json({ ok: true, servico: "ACERTE ou CAIA by BruCe - API" });
   });
 
+  app.use("/api/auth", authRoutes);
   app.use("/api/questions", questionsRoutes);
   app.use("/api/palavras", palavrasRoutes);
   app.use("/api/afirmacoes", afirmacoesRoutes);
