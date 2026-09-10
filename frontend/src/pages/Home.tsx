@@ -28,7 +28,7 @@ export default function Home() {
         )}
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-8 -mt-16">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-8">
         <div className="animate-entrada">
           <p className="text-ouro-400 uppercase tracking-widest text-xs mb-2">by BruCe</p>
           <h1 className="titulo-jogo text-5xl sm:text-7xl leading-none">
