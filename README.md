@@ -57,14 +57,16 @@ acerte-ou-caia/
 ## Regras e mecanicas implementadas
 
 - Lider (jogador humano) comeca com **3 vidas** e **escolhe livremente**, a cada duelo, qual
-  dos adversarios restantes vai desafiar.
+  dos adversarios restantes vai desafiar. A tela de escolha avisa marcos de progresso: "Faltam
+  8 duelos para a grande final" (apos 2 vitorias), "Faltam 4" (apos 6), "Faltam 2" (apos 8) e
+  "Este e o duelo final!" antes do 10º confronto.
 - **Duelo por turnos, com o mesmo tipo de rodada do inicio ao fim**: ao escolher um
   adversario, o tipo de rodada (multipla escolha, Letras Embaralhadas ou Sim ou Nao) e
   sorteado uma unica vez e vale para todas as trocas de turno daquele duelo especifico.
-- **Voce ve a CPU jogar de verdade**: no turno do adversario, a mesma pergunta/palavra/
-  afirmacao aparece na tela (uma rodada nova, nunca repetida), com uma fase de "pensando" e
-  depois a resposta da CPU sendo revelada visualmente — acertando (e devolvendo a vez) ou
-  errando e caindo no alcapao, com efeito sonoro e animacao de queda.
+- **Voce ve a CPU jogar de verdade**: no turno do adversario, uma rodada nova (nunca repetida)
+  aparece na tela, com uma fase de "pensando" e depois a resposta da CPU sendo revelada
+  visualmente — acertando (e devolvendo a vez) ou errando e caindo no alcapao, com efeito
+  sonoro e animacao de queda.
 - **Sem perguntas repetidas na mesma partida**: cada pergunta, palavra ou afirmacao sorteada
   (para o jogador OU para a CPU) fica marcada como usada e nunca volta a aparecer naquela
   partida, do primeiro duelo ao desafio final.
@@ -73,10 +75,22 @@ acerte-ou-caia/
   tipos de rodada.
 - **Letras Embaralhadas** aceita clique nas letras, **digitacao pelo teclado fisico**, ou
   **digitar a palavra inteira e confirmar** — acertando a palavra completa, vale na hora. As
-  caixas de letra se ajustam automaticamente ao tamanho da tela para nunca quebrar linha.
-- Ao vencer um duelo, o Lider escolhe entre a moeda de **ouro** ou **prata**; o painel revela
-  o premio das **duas** moedas (a escolhida e a que ficou de fora): valores de R$ 1 a
-  R$ 30.000, ou os modificadores **Vida Extra**, **Dividir por 2** e **Perde Tudo**.
+  caixas de letra se ajustam automaticamente ao tamanho da tela (via `clamp()` com `vw`) para
+  nunca quebrar linha, mesmo em palavras longas ou telas estreitas.
+- **Modo microfone (opcional)**: o jogador pode ativar a resposta por voz (checkbox na tela
+  inicial ou botao 🎙️ no cabecalho do jogo). Enquanto e a vez do Lider, o microfone fica
+  ouvindo; falar a opcao certa (texto da alternativa, "letra A/B/C/D" ou "opcao 1/2/3/4"),
+  "verdadeiro/falso" (ou "sim/nao"), ou a palavra inteira da rodada de Letras Embaralhadas
+  conta ponto automaticamente. Disponivel apenas em navegadores com suporte a Web Speech API
+  (Chrome/Edge); o botao so aparece quando o navegador suporta.
+- **Baralho fixo de fichas por partida**: as fichas especiais **Vida Extra**, **Dividir por 2**
+  e **Perde Tudo** aparecem **uma unica vez cada** em toda a partida. As demais 17 fichas sao
+  valores em dinheiro que, somados, fracionam o premio maximo do jogo comum (R$ 300.000). Ao
+  vencer um duelo, o Lider escolhe entre a moeda de **ouro** ou **prata**, sacadas sem
+  reposicao desse baralho embaralhado; o painel revela o premio das duas moedas (a escolhida e
+  a que ficou de fora).
+- **Painel de premios** (botao 💰 no cabecalho): mostra todas as fichas do baralho da partida,
+  apagando (riscando) as que ja sairam, para o jogador acompanhar o que ainda pode aparecer.
 - Apos vencer os 10 duelos, a **Grande Decisao**: parar com metade do premio ou arriscar no
   **desafio final** (10 perguntas em 2 minutos, sem repetir nada do que ja saiu na partida)
   para dobrar o premio.
@@ -94,8 +108,9 @@ acerte-ou-caia/
 - **Painel do administrador:** CRUD completo do banco de perguntas de multipla escolha,
   protegido por uma chave simples (`ADMIN_KEY`). Palavras e afirmacoes por enquanto sao
   gerenciadas via API/seed (ver "Proximos passos").
-- Interface **responsiva**, pensada para caber sem rolagem excessiva em celulares na vertical
-  e na horizontal, com efeitos de entrada suaves em quase todos os elementos.
+- Interface **responsiva de ponta a ponta**: layout compacto pensado para caber sem rolagem
+  excessiva em celulares na vertical e na horizontal (variante `landscape:` do Tailwind),
+  tablets, notebooks e desktops, com efeitos de entrada suaves em quase todos os elementos.
 
 ## Banco de conteudo
 

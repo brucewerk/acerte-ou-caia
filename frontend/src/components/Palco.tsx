@@ -18,20 +18,20 @@ export function Palco({
 }: PalcoProps) {
   return (
     <div className="w-full">
-      <div className="flex items-center justify-center gap-2 mb-4">
+      <div className="flex items-center justify-center gap-2 mb-2 sm:mb-4 landscape:mb-1">
         {Array.from({ length: 3 }).map((_, i) => (
           <span
             key={i}
-            className={`h-3 w-3 rounded-full ${
+            className={`h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full ${
               i < vidas ? "bg-ouro-500 shadow-[0_0_10px_2px_rgba(242,183,5,0.6)]" : "bg-palco-700"
             }`}
             title={i < vidas ? "Vida disponivel" : "Vida perdida"}
           />
         ))}
-        <span className="text-xs text-creme/60 ml-2">vidas do Lider</span>
+        <span className="text-[10px] sm:text-xs text-creme/60 ml-2">vidas do Lider</span>
       </div>
 
-      <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-3">
+      <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 sm:gap-3 landscape:gap-1 max-w-lg sm:max-w-none mx-auto">
         {adversarios.map((a, i) => {
           const atual = a.estacao === adversarioAtualEstacao;
           const clicavel = selecionavel && !a.derrotado && onSelecionar;
@@ -49,11 +49,13 @@ export function Palco({
               `}
               title={a.derrotado ? `${a.nome} caiu` : `${a.nome} (${a.frase})`}
             >
-              <span className={`text-lg sm:text-2xl ${!a.derrotado ? "animate-quicar" : ""}`}>
+              <span className={`text-base sm:text-2xl landscape:text-sm ${!a.derrotado ? "animate-quicar" : ""}`}>
                 {a.derrotado ? "😵" : a.emoji}
               </span>
-              <span className="text-[9px] sm:text-[11px] text-creme/50">#{a.estacao}</span>
-              <span className="text-[9px] sm:text-[11px] font-semibold leading-tight text-center px-1">
+              <span className="text-[8px] sm:text-[11px] text-creme/50 hidden xs:block landscape:hidden">
+                #{a.estacao}
+              </span>
+              <span className="text-[8px] sm:text-[11px] font-semibold leading-tight text-center px-0.5 truncate w-full">
                 {a.derrotado ? "Caiu" : a.nome}
               </span>
             </button>

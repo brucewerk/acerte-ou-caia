@@ -8,9 +8,11 @@ import {
   respostaCPU,
   registrarResultado,
 } from "../api/game";
-import { sortearParDeMoedas } from "./premios";
+import { montarPoolDeFichas, FichaPainel } from "./premios";
 import { atribuirPersonas } from "./personas";
 import { sons } from "./sons";
+import { useReconhecimentoVoz } from "./useReconhecimentoVoz";
+import { combinarRespostaMultiplaEscolha, combinarSimOuNao, combinarPalavra } from "./matchVoz";
 
 export type FaseJogo =
   | "nome"
@@ -70,6 +72,11 @@ export function useJogo() {
 
   const [moedaOuro, setMoedaOuro] = useState<PremioOuModificador | null>(null);
   const [moedaPrata, setMoedaPrata] = useState<PremioOuModificador | null>(null);
+  const [fichasPainel, setFichasPainel] = useState<FichaPainel[]>([]);
+
+  const [modoMicrofone, setModoMicrofone] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("aoc_modo_mic") === "true"
+  );
 
   const [resultadoFinal, setResultadoFinal] = useState<{
     sucesso: boolean;
@@ -151,6 +158,7 @@ export function useJogo() {
     perguntasUsadasRef.current.clear();
     palavrasUsadasRef.current.clear();
     afirmacoesUsadasRef.current.clear();
+    setFichasPainel(montarPoolDeFichas());
     try {
       const novos = await apiGerarAdversarios();
       setAdversarios(atribuirPersonas(novos));
@@ -221,12 +229,21 @@ export function useJogo() {
         atuais.map((a) => (a.estacao === adversarioAtualEstacao ? { ...a, derrotado: true } : a))
       );
       setDuelosVencidos((v) => v + 1);
-      const par = sortearParDeMoedas();
-      setMoedaOuro(par.ouro);
-      setMoedaPrata(par.prata);
+
+      const disponiveis = fichasPainel.filter((f) => !f.revelada);
+      const [fichaOuro, fichaPrata] = disponiveis.length >= 2 ? disponiveis : [
+        { id: `extra-ouro-${Date.now()}`, rotulo: "R$ 1.000", premio: { tipo: "valor" as const, valor: 1000 }, revelada: false },
+        { id: `extra-prata-${Date.now()}`, rotulo: "R$ 1.000", premio: { tipo: "valor" as const, valor: 1000 }, revelada: false },
+      ];
+      setMoedaOuro(fichaOuro.premio);
+      setMoedaPrata(fichaPrata.premio);
+      setFichasPainel((atuais) =>
+        atuais.map((f) => (f.id === fichaOuro.id || f.id === fichaPrata.id ? { ...f, revelada: true } : f))
+      );
+
       setFase("coin");
     }, 1300);
-  }, [adversarioAtualEstacao]);
+  }, [adversarioAtualEstacao, fichasPainel]);
 
   /** Turno da CPU: ela "pensa", uma rodada nova (mesmo tipo do duelo) e exibida, e a resposta
    * dela e revelada visualmente antes de decidir se ela cai ou devolve a vez ao Lider. */
@@ -423,6 +440,39 @@ export function useJogo() {
   /** Ids de perguntas de multipla escolha ja usadas nesta partida, para o Desafio Final tambem evitar repetir. */
   const obterPerguntasUsadas = useCallback(() => Array.from(perguntasUsadasRef.current), []);
 
+  // ---------- Modo microfone (responder por voz) ----------
+  const ouvindoAgora = modoMicrofone && fase === "duelo" && turno === "lider" && !bloqueado && !aguardandoCPU;
+
+  const aoReconhecerFala = useCallback(
+    (transcricao: string) => {
+      if (turno !== "lider" || bloqueado) return;
+      if (tipoRodada === "multipla-escolha" && perguntaAtual) {
+        const idx = combinarRespostaMultiplaEscolha(transcricao, perguntaAtual.opcoes);
+        if (idx !== null) responderMultiplaEscolha(idx);
+      } else if (tipoRodada === "sim-ou-nao" && afirmacaoAtual) {
+        const resp = combinarSimOuNao(transcricao);
+        if (resp !== null) responderSimOuNao(resp);
+      } else if (tipoRodada === "letras-embaralhadas" && palavraAtual) {
+        if (combinarPalavra(transcricao, palavraAtual.palavra)) responderLetras(true);
+      }
+    },
+    [turno, bloqueado, tipoRodada, perguntaAtual, afirmacaoAtual, palavraAtual, responderMultiplaEscolha, responderSimOuNao, responderLetras]
+  );
+
+  const { suportado: vozSuportada, capturando: vozCapturando } = useReconhecimentoVoz({
+    ativo: modoMicrofone,
+    ouvindo: ouvindoAgora,
+    onResultado: aoReconhecerFala,
+  });
+
+  const alternarModoMicrofone = useCallback(() => {
+    setModoMicrofone((v) => {
+      const novo = !v;
+      if (typeof window !== "undefined") localStorage.setItem("aoc_modo_mic", String(novo));
+      return novo;
+    });
+  }, []);
+
   return {
     fase,
     nomeJogador,
@@ -465,5 +515,10 @@ export function useJogo() {
     finalizarDesafioFinal,
     jogarNovamente,
     obterPerguntasUsadas,
+    fichasPainel,
+    modoMicrofone,
+    vozSuportada,
+    vozCapturando,
+    alternarModoMicrofone,
   };
 }
