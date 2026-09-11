@@ -84,13 +84,24 @@ acerte-ou-caia/
   conta ponto automaticamente. Disponivel apenas em navegadores com suporte a Web Speech API
   (Chrome/Edge); o botao so aparece quando o navegador suporta.
 - **Baralho fixo de fichas por partida**: as fichas especiais **Vida Extra**, **Dividir por 2**
-  e **Perde Tudo** aparecem **uma unica vez cada** em toda a partida. As demais 17 fichas sao
-  valores em dinheiro que, somados, fracionam o premio maximo do jogo comum (R$ 300.000). Ao
-  vencer um duelo, o Lider escolhe entre a moeda de **ouro** ou **prata**, sacadas sem
-  reposicao desse baralho embaralhado; o painel revela o premio das duas moedas (a escolhida e
-  a que ficou de fora).
-- **Painel de premios** (botao 💰 no cabecalho): mostra todas as fichas do baralho da partida,
-  apagando (riscando) as que ja sairam, para o jogador acompanhar o que ainda pode aparecer.
+  e **Perde Tudo** aparecem **uma unica vez cada** em toda a partida, e nunca voltam a aparecer
+  depois de reveladas (somem do painel). As demais 17 fichas sao valores **redondos** (multiplos
+  de R$ 1.000) que, somados, fracionam o premio maximo do jogo comum (R$ 300.000). A vida extra
+  nao tem teto: se o jogador nunca perdeu nenhuma vida, pode chegar a 4. Ao vencer um duelo, o
+  Lider escolhe entre a moeda de **ouro** ou **prata**, sacadas sem reposicao desse baralho
+  embaralhado — qual das duas guarda a melhor ficha e sorteado a cada duelo, sem vies. O painel
+  revela o premio das duas moedas e avisa se a escolha foi boa ou ruim comparada a outra.
+- **Painel de premios** (botao 💰 no cabecalho): mostra todas as fichas ainda disponiveis no
+  baralho da partida (as reveladas somem da lista) e informa quanto dinheiro ainda pode ser
+  conquistado.
+- **Economia de vidas entre Lider e adversario**: se o Lider errar (ou o tempo esgotar) e ainda
+  tiver vidas, ele nao cai — perde uma vida, que passa para o adversario, e a MESMA
+  pergunta/palavra/afirmacao vai para o turno dele (o mesmo vale para o repasse manual). Se o
+  adversario, tendo recebido vidas assim, tambem errar, ele nao cai: perde uma dessas vidas, que
+  volta para o Lider, e o jogo segue. So cai quem errar sem ter mais vidas disponiveis.
+- **Sim ou Nao com tema fixo por duelo**: ao cair a rodada Sim ou Nao, o tema (categoria) da
+  primeira afirmacao sorteada e anunciado e vale para todas as afirmacoes daquele duelo,
+  inclusive as do adversario.
 - Apos vencer os 10 duelos, a **Grande Decisao**: parar com metade do premio ou arriscar no
   **desafio final** (10 perguntas em 2 minutos, sem repetir nada do que ja saiu na partida)
   para dobrar o premio.
@@ -114,15 +125,21 @@ acerte-ou-caia/
 
 ## Banco de conteudo
 
-- `backend/src/data/questoes.ts`: **437 perguntas** de multipla escolha (8 categorias, 3
+- `backend/src/data/questoes.ts`: **536 perguntas** de multipla escolha (8 categorias, 3
   dificuldades).
-- `backend/src/data/palavras.ts`: **150 palavras** para a rodada Letras Embaralhadas.
-- `backend/src/data/afirmacoes.ts`: **111 afirmacoes** para a rodada Sim ou Nao.
-- **Total: quase 700 itens de conteudo**, todos elegiveis para o sistema de "sem repeticao na
-  mesma partida".
+- `backend/src/data/palavras.ts`: **226 palavras** para a rodada Letras Embaralhadas.
+- `backend/src/data/afirmacoes.ts`: **191 afirmacoes** para a rodada Sim ou Nao, distribuidas
+  entre as 8 categorias (minimo de 16 por categoria, para sustentar duelos tematicos inteiros).
+- **Total: quase 1.000 itens de conteudo.**
 
-Para continuar expandindo, adicione mais objetos ao array correspondente e rode `npm run seed`
-novamente, ou cadastre perguntas de multipla escolha direto pelo painel `/admin`.
+Isso ainda esta longe da faixa de 3.000 a 5.000 perguntas que foi pedida — gerar esse volume
+com qualidade e fatos verificados exigiria varias rodadas de expansao. Os caminhos praticos
+para continuar crescendo:
+- Adicionar mais objetos aos arrays em `backend/src/data/*.ts` e rodar `npm run seed` de novo
+  (é o que foi feito nas ultimas rodadas: comecei com ~300 itens e cheguei a quase 1.000).
+- Cadastrar perguntas de multipla escolha direto pelo painel `/admin`, sem mexer em codigo.
+- Pedir para eu continuar expandindo em proximas mensagens — cada lote de ~150-200 itens novos
+  e viavel por vez mantendo a qualidade.
 
 ## Variaveis de ambiente
 

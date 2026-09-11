@@ -13,17 +13,24 @@ function embaralhar<T>(lista: T[]): T[] {
 }
 
 /**
- * Gera valores em dinheiro que somam exatamente o premio maximo do jogo
- * comum (R$300.000 por padrao), em fichas de tamanhos variados (nao
- * uniformes, para dar a sensacao de fichas pequenas e fichas grandes).
+ * Gera valores em dinheiro "redondos" (multiplos de R$1.000) que somam
+ * exatamente o premio maximo do jogo comum, em fichas de tamanhos variados
+ * (nao uniformes, para dar a sensacao de fichas pequenas e fichas grandes).
  */
 function gerarValoresEmDinheiro(quantidade: number, total: number): number[] {
   const pesos = Array.from({ length: quantidade }, () => Math.random() + 0.2);
   const somaPesos = pesos.reduce((a, b) => a + b, 0);
-  const valores = pesos.map((p) => Math.max(100, Math.round(((p / somaPesos) * total) / 100) * 100));
+  const valores = pesos.map((p) => Math.max(1000, Math.round(((p / somaPesos) * total) / 1000) * 1000));
 
   const somaAtual = valores.reduce((a, b) => a + b, 0);
-  valores[valores.length - 1] = Math.max(100, valores[valores.length - 1] + (total - somaAtual));
+  const diferenca = total - somaAtual; // sempre multiplo de 1000, pois todos os valores sao multiplos de 1000
+
+  // Aplica a diferenca de arredondamento na maior ficha, mantendo todos os valores redondos.
+  let indiceMaior = 0;
+  for (let i = 1; i < valores.length; i++) {
+    if (valores[i] > valores[indiceMaior]) indiceMaior = i;
+  }
+  valores[indiceMaior] = Math.max(1000, valores[indiceMaior] + diferenca);
 
   return valores;
 }
@@ -68,5 +75,20 @@ export function descreverPremio(p: PremioOuModificador): string {
       return "Dividir por 2";
     case "perde-tudo":
       return "Perde tudo!";
+  }
+}
+
+/** Atribui uma pontuacao aproximada a um premio, so para comparar duas fichas entre si
+ * (ex.: dizer ao jogador se a escolha dele foi boa ou ruim em relacao a moeda descartada). */
+export function pontuarPremio(p: PremioOuModificador): number {
+  switch (p.tipo) {
+    case "valor":
+      return p.valor;
+    case "vida-extra":
+      return 20000; // equivalente a uma ficha de bom valor
+    case "dividir-por-2":
+      return -10000;
+    case "perde-tudo":
+      return -1000000;
   }
 }

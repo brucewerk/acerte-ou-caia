@@ -6,9 +6,15 @@ interface PainelPremiosProps {
   onFechar: () => void;
 }
 
-/** Painel (modal) mostrando quais fichas ainda podem sair nas moedas dos proximos duelos. */
+/** Painel (modal) mostrando quais fichas ainda podem sair nas moedas dos proximos duelos.
+ * Fichas ja reveladas desaparecem da lista (nao aparecem jamais novamente na partida). */
 export function PainelPremios({ fichas, aberto, onFechar }: PainelPremiosProps) {
   if (!aberto) return null;
+
+  const disponiveis = fichas.filter((f) => !f.revelada);
+  const totalEmDinheiro = disponiveis
+    .filter((f) => f.premio.tipo === "valor")
+    .reduce((soma, f) => soma + (f.premio.tipo === "valor" ? f.premio.valor : 0), 0);
 
   return (
     <div
@@ -25,27 +31,37 @@ export function PainelPremios({ fichas, aberto, onFechar }: PainelPremiosProps) 
             Fechar
           </button>
         </div>
+
+        <div className="bg-palco-900 border border-palco-700 rounded-xl px-4 py-3 text-center">
+          <p className="text-[11px] text-creme/50 uppercase tracking-wide">Ainda em jogo para conquistar</p>
+          <p className="titulo-jogo text-xl text-acerto-400">
+            {totalEmDinheiro.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          </p>
+        </div>
+
         <p className="text-xs text-creme/50">
-          Fichas que ja sairam ficam apagadas. As especiais (Vida Extra, Dividir por 2 e Perde
+          Fichas ja reveladas somem desta lista. As especiais (Vida Extra, Dividir por 2 e Perde
           Tudo) so aparecem uma vez em toda a partida.
         </p>
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-          {fichas.map((f) => (
-            <div
-              key={f.id}
-              className={`text-center text-[11px] sm:text-xs px-2 py-2 rounded-lg border transition-opacity
-                ${
-                  f.revelada
-                    ? "border-palco-700 text-creme/25 line-through opacity-40"
-                    : f.premio.tipo !== "valor"
+
+        {disponiveis.length === 0 ? (
+          <p className="text-center text-sm text-creme/50 py-4">Todas as fichas ja foram reveladas.</p>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {disponiveis.map((f) => (
+              <div
+                key={f.id}
+                className={`text-center text-[11px] sm:text-xs px-2 py-2 rounded-lg border ${
+                  f.premio.tipo !== "valor"
                     ? "border-ouro-500 text-ouro-400 font-semibold"
                     : "border-palco-700 text-creme/80"
                 }`}
-            >
-              {f.rotulo}
-            </div>
-          ))}
-        </div>
+              >
+                {f.rotulo}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

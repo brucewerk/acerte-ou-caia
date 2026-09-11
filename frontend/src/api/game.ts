@@ -15,9 +15,9 @@ export async function buscarPalavras(quantidade: number, excluir?: string): Prom
   return data;
 }
 
-export async function buscarAfirmacoes(quantidade: number, excluir?: string): Promise<Afirmacao[]> {
+export async function buscarAfirmacoes(quantidade: number, excluir?: string, categoria?: string): Promise<Afirmacao[]> {
   const { data } = await api.get<Afirmacao[]>("/afirmacoes/random", {
-    params: { quantidade, excluir: excluir || undefined },
+    params: { quantidade, excluir: excluir || undefined, categoria: categoria || undefined },
   });
   return data;
 }

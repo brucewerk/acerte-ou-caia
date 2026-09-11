@@ -2,14 +2,18 @@ import { Request, Response, NextFunction } from "express";
 import { Afirmacao } from "../models/Afirmacao";
 import { parseIdsExcluidos } from "../utils/excluirIds";
 
-// GET /api/afirmacoes/random?quantidade=1&excluir=id1,id2 -> usado na rodada "Sim ou Nao"
+// GET /api/afirmacoes/random?quantidade=1&excluir=id1,id2&categoria=esportes -> usado na rodada "Sim ou Nao"
+// O parametro "categoria" permite puxar afirmacoes do mesmo tema, para que um duelo inteiro
+// gire em torno do mesmo assunto.
 export async function sortearAfirmacoes(req: Request, res: Response, next: NextFunction) {
   try {
     const quantidade = Math.min(Number(req.query.quantidade) || 1, 20);
     const idsExcluidos = parseIdsExcluidos(req.query.excluir);
+    const categoria = req.query.categoria as string | undefined;
 
     const match: Record<string, unknown> = { ativa: true };
     if (idsExcluidos.length) match._id = { $nin: idsExcluidos };
+    if (categoria) match.categoria = categoria;
 
     const afirmacoes = await Afirmacao.aggregate([
       { $match: match },
