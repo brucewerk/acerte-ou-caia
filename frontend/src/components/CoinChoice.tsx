@@ -54,10 +54,11 @@ export function CoinChoice({ ouro, prata, onEscolher, onContinuar }: CoinChoiceP
             key={moeda}
             onClick={() => escolher(moeda)}
             disabled={!!escolhida}
-            className={`h-20 w-20 sm:h-28 sm:w-28 rounded-full font-display text-base sm:text-lg transition-transform
+            className={`h-20 w-20 sm:h-28 sm:w-28 rounded-full font-display text-base sm:text-lg transition-transform [transform-style:preserve-3d]
               ${moeda === "ouro" ? "bg-gradient-to-br from-ouro-400 to-ouro-600" : "bg-gradient-to-br from-slate-200 to-slate-400"}
               text-palco-950 shadow-lg
               ${!escolhida ? "hover:scale-105" : ""}
+              ${escolhida === moeda ? "animate-girar" : ""}
               ${escolhida && escolhida !== moeda ? "opacity-50" : ""}
               disabled:cursor-not-allowed`}
           >

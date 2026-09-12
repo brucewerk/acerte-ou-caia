@@ -12,6 +12,8 @@ import { AlcapaoOverlay } from "../components/AlcapaoOverlay";
 import { GrandeDecisao } from "../components/GrandeDecisao";
 import { DesafioFinal } from "../components/DesafioFinal";
 import { PainelPremios } from "../components/PainelPremios";
+import { PalcoAmbiente } from "../components/PalcoAmbiente";
+import { Confete } from "../components/Confete";
 
 function formatarMoeda(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -42,9 +44,12 @@ export default function Game() {
   }
 
   const marco = jogo.fase === "escolhendo" ? mensagemDeMarco(jogo.duelosVencidos, jogo.totalDuelos) : null;
+  const vitoriaComPremio = jogo.fase === "fim" && !!jogo.resultadoFinal?.sucesso && jogo.resultadoFinal.premioFinal > 0;
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="min-h-dvh flex flex-col relative">
+      <PalcoAmbiente />
+      <Confete ativo={vitoriaComPremio} />
       <AlcapaoOverlay
         visivel={jogo.queda.visivel}
         quemCaiu={jogo.queda.quemCaiu}

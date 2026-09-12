@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Palavra } from "../types";
 import { Timer } from "./Timer";
 
@@ -15,6 +15,9 @@ interface LetrasEmbaralhadasProps {
 }
 
 const ALFABETO = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const GAP_PX = 4; // espaco entre caixas (mantido em sincronia com o gap do CSS abaixo)
+const CAIXA_MIN_PX = 15;
+const CAIXA_MAX_PX = 44;
 
 function normalizar(txt: string) {
   return txt
@@ -31,13 +34,38 @@ function calcularRevelacaoInicial(letras: string[]) {
   });
 }
 
-/** Tamanho da caixa de cada letra, calculado via CSS para caber sempre em uma unica linha. */
-function estiloCaixa(quantidade: number): React.CSSProperties {
-  return {
-    width: `clamp(16px, calc((100vw - 3rem) / ${Math.max(quantidade, 1)}), 42px)`,
-    height: `clamp(20px, calc((100vw - 3rem) / ${Math.max(quantidade, 1)} * 1.25), 52px)`,
-    fontSize: `clamp(10px, calc((100vw - 3rem) / ${Math.max(quantidade, 1)} * 0.55), 22px)`,
-  };
+/**
+ * Mede a largura real disponivel no container (via ResizeObserver) e devolve
+ * o tamanho de caixa ideal para que todas as letras caibam SEMPRE em uma
+ * unica linha, sem depender de estimativas de vw que ignoram padding real.
+ */
+function useTamanhoDeCaixa(quantidadeCaixas: number) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tamanho, setTamanho] = useState(CAIXA_MAX_PX);
+
+  useLayoutEffect(() => {
+    const elemento = containerRef.current;
+    if (!elemento) return;
+
+    function recalcular(largura: number) {
+      const espacoParaGaps = GAP_PX * Math.max(quantidadeCaixas - 1, 0);
+      const largurabruta = (largura - espacoParaGaps) / Math.max(quantidadeCaixas, 1);
+      const novoTamanho = Math.floor(Math.min(Math.max(largurabruta, CAIXA_MIN_PX), CAIXA_MAX_PX));
+      setTamanho(novoTamanho);
+    }
+
+    recalcular(elemento.clientWidth);
+
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) recalcular(entry.contentRect.width);
+    });
+    observer.observe(elemento);
+    return () => observer.disconnect();
+  }, [quantidadeCaixas]);
+
+  return { containerRef, tamanho };
 }
 
 export function LetrasEmbaralhadas({
@@ -51,6 +79,7 @@ export function LetrasEmbaralhadas({
 }: LetrasEmbaralhadasProps) {
   const letrasPalavra = useMemo(() => normalizar(palavra.palavra).split(""), [palavra]);
   const letrasVisiveisCount = letrasPalavra.length;
+  const { containerRef, tamanho } = useTamanhoDeCaixa(letrasVisiveisCount);
 
   const [reveladas, setReveladas] = useState<boolean[]>(() => calcularRevelacaoInicial(letrasPalavra));
   const [letrasErradas, setLetrasErradas] = useState<string[]>([]);
@@ -132,21 +161,27 @@ export function LetrasEmbaralhadas({
     return posicoesValidas[Math.floor(posicoesValidas.length * 0.7)] ?? posicoesValidas[0];
   }, [letrasPalavra]);
 
+  const fonteTamanho = Math.max(9, Math.round(tamanho * 0.52));
+
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-5">
       {!espectador && (
         <Timer duracaoMs={30000} ativo={!bloqueado && !encerrado} onEsgotar={onEsgotarTempo} chave={chave} />
       )}
 
-      <div className="bg-palco-800 border border-palco-700 rounded-2xl p-4 sm:p-6 text-center flex flex-col gap-3">
+      <div className="bg-palco-800 border border-palco-700 rounded-2xl p-4 sm:p-6 text-center flex flex-col gap-3 shadow-holofote">
         <span className="text-xs uppercase tracking-wide text-ouro-400/80">
           Letras Embaralhadas · {palavra.categoria}
         </span>
         <p className="text-creme/70 text-sm">{palavra.dica}</p>
 
-        <div className="flex flex-nowrap justify-center gap-1 sm:gap-1.5 mt-2 w-full overflow-hidden">
+        <div
+          ref={containerRef}
+          className="flex flex-nowrap justify-center items-center mt-2 w-full"
+          style={{ gap: `${GAP_PX}px` }}
+        >
           {letrasPalavra.map((letra, i) => {
-            if (letra === " ") return <div key={i} style={{ width: "0.6em" }} />;
+            if (letra === " ") return <div key={i} style={{ width: tamanho * 0.4 }} />;
 
             const mostrarLetra = espectador
               ? sucessoEspectador || i !== indiceTravado
@@ -156,7 +191,12 @@ export function LetrasEmbaralhadas({
             return (
               <div
                 key={i}
-                style={{ ...estiloCaixa(letrasVisiveisCount), animationDelay: espectador ? `${i * 90}ms` : undefined }}
+                style={{
+                  width: tamanho,
+                  height: tamanho * 1.2,
+                  fontSize: fonteTamanho,
+                  animationDelay: espectador ? `${i * 90}ms` : undefined,
+                }}
                 className={`shrink-0 rounded-md flex items-center justify-center font-display leading-none transition-colors
                   ${espectador ? "animate-entrada opacity-0" : ""}
                   ${travadaComErro ? "bg-queda-500/20 border border-queda-500 text-queda-500 animate-pulse" : ""}

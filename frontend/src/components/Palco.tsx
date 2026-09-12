@@ -19,10 +19,10 @@ export function Palco({
   return (
     <div className="w-full">
       <div className="flex items-center justify-center gap-2 mb-2 sm:mb-4 landscape:mb-1">
-        {Array.from({ length: 3 }).map((_, i) => (
+        {Array.from({ length: Math.max(vidas, 3) }).map((_, i) => (
           <span
             key={i}
-            className={`h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full ${
+            className={`h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full transition-colors ${
               i < vidas ? "bg-ouro-500 shadow-[0_0_10px_2px_rgba(242,183,5,0.6)]" : "bg-palco-700"
             }`}
             title={i < vidas ? "Vida disponivel" : "Vida perdida"}
@@ -42,14 +42,22 @@ export function Palco({
               disabled={!clicavel}
               onClick={() => clicavel && onSelecionar!(a.estacao)}
               style={{ animationDelay: `${i * 40}ms` }}
-              className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all animate-entrada opacity-0
+              className={`aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5 border transition-all animate-entrada opacity-0
                 ${a.derrotado ? "bg-palco-800/40 border-palco-700 opacity-40" : "bg-palco-800 border-palco-700"}
                 ${atual && !a.derrotado ? "ring-2 ring-ouro-500 animate-pulsarOuro" : ""}
-                ${clicavel ? "cursor-pointer hover:border-ouro-500 hover:bg-palco-700 hover:-translate-y-1" : "cursor-default"}
+                ${clicavel ? "cursor-pointer hover:border-ouro-500 hover:bg-palco-700 hover:-translate-y-1 hover:shadow-[0_4px_18px_rgba(242,183,5,0.25)]" : "cursor-default"}
               `}
               title={a.derrotado ? `${a.nome} caiu` : `${a.nome} (${a.frase})`}
             >
-              <span className={`text-base sm:text-2xl landscape:text-sm ${!a.derrotado ? "animate-quicar" : ""}`}>
+              <span
+                className={`flex items-center justify-center rounded-full h-6 w-6 sm:h-9 sm:w-9 landscape:h-5 landscape:w-5 text-sm sm:text-xl landscape:text-xs
+                  ${
+                    a.derrotado
+                      ? "bg-palco-900"
+                      : "bg-gradient-to-br from-palco-700 to-palco-900 ring-1 ring-inset ring-ouro-500/30"
+                  }
+                  ${!a.derrotado ? "animate-quicar" : ""}`}
+              >
                 {a.derrotado ? "😵" : a.emoji}
               </span>
               <span className="text-[8px] sm:text-[11px] text-creme/50 hidden xs:block landscape:hidden">

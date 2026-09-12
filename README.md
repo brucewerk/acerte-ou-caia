@@ -121,7 +121,13 @@ acerte-ou-caia/
   gerenciadas via API/seed (ver "Proximos passos").
 - Interface **responsiva de ponta a ponta**: layout compacto pensado para caber sem rolagem
   excessiva em celulares na vertical e na horizontal (variante `landscape:` do Tailwind),
-  tablets, notebooks e desktops, com efeitos de entrada suaves em quase todos os elementos.
+  tablets, notebooks e desktops. As caixas de letras do Letras Embaralhadas usam
+  **ResizeObserver** para medir o espaco real disponivel e nunca quebram linha nem estouram o
+  container, mesmo em palavras longas ou telas bem estreitas.
+- **Visual imersivo e animado**: fundo com holofotes e particulas douradas flutuando (100% CSS,
+  sem imagens externas), titulo com brilho animado na Home, avatares dos adversarios com selo
+  em gradiente, queda no alcapao com tremor de tela e brilho vermelho, moeda girando em 3D ao
+  ser escolhida, e confete comemorativo quando o jogador termina a partida com premio.
 
 ## Banco de conteudo
 
